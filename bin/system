@@ -1,0 +1,48 @@
+#!/bin/bash
+
+usage() {
+  echo "Usage: $0 (start|stop)"
+}
+
+if [ $# -ne 1 ]; then
+  usage
+  exit 1
+fi
+
+case $1 in 
+  "start")
+    echo "starting SMS Alert System ..."
+    system-monitor --port 5999 --producer-port 6000 --N 15 &
+    sleep 1
+    system-producer --port 6000 --monitor-port 5999 --msg-num 50 &
+    sleep 2
+    system-sender --port 6001 --producer-port 6000 --mean-time 3 --failure-rate 0.2 &
+    system-sender --port 6004 --producer-port 6000 --mean-time 10 --failure-rate 0.1 &
+    system-sender --port 6003 --producer-port 6000 --mean-time 15 --failure-rate 0.3 &
+    ;;
+  
+  "stop")
+    echo "stopping SMS Alert System ..."
+
+    echo '{"message_type": "shutdown"}' | nc -C localhost 6000 || true
+    sleep 2
+
+    # check senders monitor producer all shut down
+    if pgrep -f system-sender &> /dev/null; then
+      echo "killing Sender ..."
+      pkill -f system-sender || true
+    fi
+    if pgrep -f system-monitor &> /dev/null; then
+      echo "killing Monitor ..."
+      pkill -f system-monitor || true
+    fi
+    if pgrep -f system-producer &> /dev/null; then
+      echo "killing Producer ..."
+      pkill -f system-producer || true
+    fi
+    ;;
+  *)
+    usage
+    exit 1
+    ;;
+esac
