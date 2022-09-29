@@ -1,9 +1,10 @@
 SMS Alert System
 ========================
-(under the SMSAlert dir)
+(under the root dir)
 
 Prepare environment
 > pip install -r requirements.txt
+
 > pip install -e .
 
 Start the system
